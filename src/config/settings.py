@@ -18,6 +18,22 @@ class Settings(BaseSettings):
     mongodb_user: Optional[str] = None
     mongodb_password: Optional[str] = None
     
+    # MongoDB Connection Pooling & Performance (Motor async driver)
+    mongodb_max_pool_size: int = 50  # Maximum number of concurrent connections
+    mongodb_min_pool_size: int = 10  # Minimum number of pooled connections
+    mongodb_server_selection_timeout_ms: int = 5000  # Timeout for server discovery
+    mongodb_socket_timeout_ms: int = 30000  # Socket timeout for operations
+    mongodb_connect_timeout_ms: int = 10000  # Connection timeout
+    mongodb_max_idle_time_ms: int = 45000  # Max idle time before connection reuse
+    mongodb_max_pool_size_per_host: int = 50  # For connection pooling per host
+    mongodb_retry_writes: bool = True  # Enable automatic retry on transient failures
+    mongodb_retry_reads: bool = True  # Enable read preference retry logic
+    
+    # MongoDB Indexing & Performance
+    mongodb_enable_fsync: bool = False  # Disable fsync to improve write performance
+    mongodb_journal_enabled: bool = True  # Enable journal for data durability
+    mongodb_write_concern: str = "majority"  # Write concern level: majority, acknowledged, or unacknowledged
+    
     # Google Cloud Configuration
     gcp_project_id: str
     gcp_credentials_path: str
