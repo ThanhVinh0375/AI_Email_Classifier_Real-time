@@ -109,6 +109,38 @@ class MongoDBService:
             collection: AsyncIOMotorCollection = self.db["processed_emails"]
             result = await collection.insert_one(email_data.dict())
             logger.info(f"Saved processed email: {email_data.message_id}")
+            # Also upsert a document into `classified_emails` so the dashboard
+            # (which reads `classified_emails`) shows the newly processed email.
+            try:
+                classified_col: AsyncIOMotorCollection = self.db["classified_emails"]
+
+                classified_doc = {
+                    "email_id": email_data.message_id,
+                    "sender": email_data.from_email,
+                    "subject": email_data.subject,
+                    "body_text": email_data.body,
+                    "classification_label": getattr(email_data.classification, 'value', str(email_data.classification)),
+                    "summary": (email_data.body[:200] if email_data.body else ""),
+                    "extracted_entities": [],
+                    "sentiment_analysis": None,
+                    "processing_time_ms": 0,
+                    "model_version": "1.0",
+                    "confidence_score": float(email_data.confidence_score),
+                    "created_at": email_data.processed_at,
+                    "updated_at": email_data.processed_at,
+                    "status": email_data.status,
+                    "retry_count": email_data.retry_count
+                }
+
+                await classified_col.update_one(
+                    {"email_id": email_data.message_id},
+                    {"$set": classified_doc},
+                    upsert=True
+                )
+                logger.info(f"Upserted classified_emails document: {email_data.message_id}")
+            except Exception as e:
+                logger.error(f"Failed to upsert classified_emails: {str(e)}")
+
             return str(result.inserted_id)
         except Exception as e:
             logger.error(f"Failed to save processed email: {str(e)}")

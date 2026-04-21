@@ -10,7 +10,6 @@ import sys
 import json
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
-from google.auth.oauthlib.flow import InstalledAppFlow
 from google.cloud import pubsub_v1
 from googleapiclient.discovery import build
 
@@ -70,10 +69,11 @@ def setup_gmail_watch(credentials_path: str, pubsub_topic: str):
         print(f"✗ Failed to setup Gmail watch: {e}")
         return False
 
-def verify_pubsub_topic(gcp_project_id: str, topic_name: str) -> bool:
+def verify_pubsub_topic(credentials_path: str, gcp_project_id: str, topic_name: str) -> bool:
     """Verify Pub/Sub topic exists"""
     try:
-        publisher = pubsub_v1.PublisherClient()
+        credentials = service_account.Credentials.from_service_account_file(credentials_path)
+        publisher = pubsub_v1.PublisherClient(credentials=credentials)
         topic_path = publisher.topic_path(gcp_project_id, topic_name)
         publisher.get_topic(request={"topic": topic_path})
         print(f"✓ Verified Pub/Sub topic: {topic_path}")
@@ -112,9 +112,9 @@ def main():
     
     # Verify topic
     topic_name = pubsub_topic.split('/')[-1]
-    if not verify_pubsub_topic(gcp_project_id, topic_name):
+    if not verify_pubsub_topic(credentials_path, gcp_project_id, topic_name):
         print("\n⚠️  Please create the Pub/Sub topic first:")
-        print(f"   gcloud pubsub topics create {topic_name}")
+        print(f"   python scripts/setup_pubsub.py")
         sys.exit(1)
     
     # Setup Gmail watch

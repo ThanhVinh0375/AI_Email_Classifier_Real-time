@@ -362,12 +362,34 @@ def main():
             "Auto-refresh interval",
             ["Manual", "5 seconds", "30 seconds", "1 minute", "5 minutes"]
         )
-        
+
+        # Map selection to seconds
+        refresh_map = {
+            "Manual": 0,
+            "5 seconds": 5,
+            "30 seconds": 30,
+            "1 minute": 60,
+            "5 minutes": 300,
+        }
+        refresh_seconds = refresh_map.get(refresh_interval, 0)
+
         st.divider()
-        
+
         # Refresh button
         if st.button("🔄 Refresh Data", use_container_width=True):
             st.rerun()
+
+        # Auto-refresh via HTML meta tag (works reliably and doesn't block event loop)
+        if refresh_seconds and refresh_seconds > 0:
+            # Insert a meta refresh so the browser reloads the page automatically
+            st.markdown(f"<meta http-equiv=\"refresh\" content=\"{refresh_seconds}\">", unsafe_allow_html=True)
+            st.markdown(f"Auto-refresh enabled — reloading every {refresh_seconds} seconds.")
+            # Clear cached data so each reload fetches fresh results from MongoDB
+            try:
+                st.cache_data.clear()
+            except Exception:
+                # Fallback: ignore if cache clearing isn't available
+                pass
     
     # Main content area
     try:
